@@ -63,7 +63,7 @@ class OpenAI_IB(gym.Env):
                                 for g in [-1, 0, 1]:
                                         for s in [-1, 0, 1]:
                                                 self.env_action.append([v, g, s])
-                        self.observation_space = spaces.Box(low=np.array([0, 0, 0, 0, 0, 0]), high=np.array([100, 100, 100, 1000, 1000, 1000]))
+                        self.observation_space = spaces.Box(low=np.array([1, 0, 0, 0, 0, 0, 0]), high=np.array([100, 100, 100, 100, 1000, 1000, 1000]))
 
                 elif self.action_type == 'continuous':
 
@@ -71,7 +71,7 @@ class OpenAI_IB(gym.Env):
                         self.action_space = spaces.Box(np.array([-1,-1,-1]), np.array([+1,+1,+1]))
 
                         # Observation space for [setpoint, velocity, gain, shift, fatigue, consumption, cost]
-                        self.observation_space = spaces.Box(low=np.array([0, 0, 0, 0, 0, 0]), high=np.array([100, 100, 100, 1000, 1000, 1000]))
+                        self.observation_space = spaces.Box(low=np.array([1, 0, 0, 0, 0, 0, 0]), high=np.array([100, 100, 100, 100, 1000, 1000, 1000]))
 
                 else:
                         raise ValueError('Invalid action_type. action_space can either be "discrete" or "continuous"')
@@ -135,7 +135,8 @@ class OpenAI_IB(gym.Env):
                         raise ValueError('Invalid reward function specification. "classic" for the original cost function or "delta" for the change in the cost fucntion between steps.')
 
                 # Print to track agent & environment during training
-                print ' Cost smoothed:', -self.smoothed_cost, ' State (v,g,s):', np.around(self.IB.visibleState()[1:4], 0), '\t Action: ', _action,
+                print(' Cost smoothed:', -self.smoothed_cost, ' State (v,g,s):', np.around(self.IB.visibleState()[
+                                                                                           1:4], 0), '\t Action: ', _action)
 
                 self.info = self.markovianState()
                 # reward is divided by 100 to improve learning
@@ -151,8 +152,8 @@ class OpenAI_IB(gym.Env):
                 self.env_steps = 0
                 self.done = False
 
-                print '\n Reset'
-                print
+                print('\n Reset')
+                print()
 
                 return self.observation
 
@@ -162,7 +163,7 @@ class OpenAI_IB(gym.Env):
 
         #
         def _render(self, mode='human', close=False):
-                print 'Rendering of the environment is not supported'
+                print('Rendering of the environment is not supported')
                 pass
 
         def markovianState(self):
@@ -200,3 +201,68 @@ class OpenAI_IB(gym.Env):
                 #         print i
 
                 return info
+
+        def step(self, _action):
+
+                # Executing the action and saving the observation
+                if self.action_type == 'discrete':
+                        self.IB.step(self.env_action[_action])
+                elif self.action_type == 'continuous':
+                        self.IB.step(_action)
+
+                self.observation = self.IB.visibleState()[:-1]
+
+                # Calculating both the relative reward (improvement or decrease) and updating the reward
+                self.delta_reward = self.reward - self.IB.state['cost']
+                self.reward = self.IB.state['cost']
+
+                # Due to the very high stochasticity a smoothed cost function is easier to follow visually
+                self.smoothed_cost = int(0.9 * self.smoothed_cost + 0.1 * self.IB.state['cost'])
+
+                # Stopping condition
+                if self.env_steps >= self.reset_after_timesteps:
+                        self.done = True
+
+                self.env_steps += 1
+
+                # Two reward functions are available:
+                # 'classic' which returns the original cost and
+                # 'delta' which returns the change in the cost function w.r.t. the previous cost
+                if self.reward_function == 'classic':
+                        return_reward = -self.IB.state['cost']
+                elif self.reward_function == 'delta':
+                        return_reward = self.delta_reward
+                else:
+                        raise ValueError('Invalid reward function specification. "classic" for the original cost function or "delta" for the change in the cost fucntion between steps.')
+
+                # Print to track agent & environment during training
+                print(' Cost smoothed:', -self.smoothed_cost, ' State (v,g,s):', np.around(self.IB.visibleState()[
+                                                                                           1:4], 0), '\t Action: ', _action)
+
+                self.info = self.markovianState()
+                # reward is divided by 100 to improve learning
+                return self.observation, return_reward/100, self.done, self.info
+
+        def reset(self):
+
+                # Resetting the entire environment
+                self.IB = IDS(self.setpoint)
+                self.observation = self.IB.visibleState()[:-1]
+                self.info = self.markovianState()
+                self.reward = -self.IB.state['cost']
+                self.env_steps = 0
+                self.done = False
+
+                print('\n Reset')
+                print()
+
+                return self.observation
+
+        def seed(self, seed=None):
+                self.np_random, seed = seeding.np_random(seed)
+                return [seed]
+
+        #
+        def render(self, mode='human', close=False):
+                print('Rendering of the environment is not supported')
+                pass

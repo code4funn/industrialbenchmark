@@ -19,7 +19,7 @@ class agent():
         for buffer in range(3):
             action = 2 * np.random.rand(3) - 1
             self.observation = self.agent.step(action)
-            self.buffer_states = np.expand_dims(self.buffer_states, self.observation, axis = 3)
+            self.buffer_states = np.expand_dims(self.buffer_states, self.observation, axis=3)
             #self.buffer_states = np.vstack([self.buffer_states, self.observation])
 
 

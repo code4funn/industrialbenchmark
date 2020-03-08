@@ -77,4 +77,35 @@ dqn.compile(Adam(lr=1e-3), metrics=['mae'])
 # Okay, now it's time to learn something! We visualize the training here for show, but this
 # slows down training quite a lot. You can always safely abort the training prematurely using
 # Ctrl + C.
-dqn.fit(env, nb_steps=50000, visualize=False, verbose=1)
+dqn.fit(env, nb_steps=500, visualize=False, verbose=1)
+
+
+
+##########################################################################################
+# let generate some data from the simulator from the same env and use model.predict(state)
+# I'm using the same code from the example.py to generate the data
+n_trajectories = 1
+T = 1000
+
+# env = IDS(p=100)
+obs_names = ['a1', 'a2', 'a3'] + env.IB.observable_keys
+data = np.zeros((n_trajectories, T, len(obs_names)))
+
+action = np.array([0., 0., 0.])
+for k in range(n_trajectories):
+    # env = IDS(p=50)
+    for t in range(T):
+        # for continuous action space
+        action += 0.1 * (2 * np.random.rand(3) - 1)
+        action = np.clip(action, -1, 1)
+
+        # for discrete action space
+        # action = np.random.randint(-1, 1, 3)
+        markovStates = env.IB.step(action)
+        data[k, t, 3:] = env.IB.visibleState()
+        data[k, t, 0:3] = action
+
+# now we the data. Lets predict the reward/cost for the data collected
+test_states = data[:, :, :7]
+# y_hat = np.zeros((n_trajectories, T, 3))
+y_hat = dqn.model.predict(test_states[0, 0, :].reshape(1, 1, 7))

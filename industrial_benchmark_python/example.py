@@ -3,7 +3,7 @@ from IDS import IDS
 import numpy as np
 # import pylab as plt
 import matplotlib.pyplot as plt
-plt.ion()
+# plt.ion()
 '''
 The MIT License (MIT)
 
@@ -79,4 +79,5 @@ for i, v in enumerate(obs_names):
 # plt.xlabel('T')
 # plt.tight_layout()
 plt.show()
-plt.close()
+# plt.savefig('reward')
+# plt.close()

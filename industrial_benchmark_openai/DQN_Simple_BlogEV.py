@@ -15,8 +15,8 @@ import cv2
 
 
 DISCOUNT = 0.99
-REPLAY_MEMORY_SIZE = 50_000  # How many last steps to keep for model training
-MIN_REPLAY_MEMORY_SIZE = 1_000  # Minimum number of steps in a memory to start training
+REPLAY_MEMORY_SIZE = 5_000  # How many last steps to keep for model training
+MIN_REPLAY_MEMORY_SIZE = 1_00  # Minimum number of steps in a memory to start training
 MINIBATCH_SIZE = 64  # How many steps (samples) to use for training
 UPDATE_TARGET_EVERY = 5  # Terminal states (end of episodes)
 MODEL_NAME = '2x256'
@@ -24,7 +24,7 @@ MIN_REWARD = -200  # For model save
 MEMORY_FRACTION = 0.20
 
 # Environment settings
-EPISODES = 20_000
+EPISODES = 2_000
 
 # Exploration settings
 epsilon = 1  # not a constant, going to be decayed
@@ -178,6 +178,7 @@ class BlobEnv:
         return img
 
 
+# create an environment object
 env = BlobEnv()
 
 # For stats
@@ -229,6 +230,19 @@ class ModifiedTensorBoard(TensorBoard):
     def update_stats(self, **stats):
         self._write_logs(stats, self.step)
 
+    def _write_logs(self, logs, index):
+        for name, value in logs.items():
+            summary = tf.Summary()
+            summary_value = summary.value.add()
+            summary_value.simple_value = value
+            summary_value.tag = name
+            # self.writer.add_summary(tf.summary.scalar(name, value),)
+            self.writer.add_summary(summary, index)
+            # self.step += 1
+        self.writer.flush()
+
+    def end(self):
+        self.writer.close()
 
 # Agent class
 class DQNAgent:
@@ -242,10 +256,10 @@ class DQNAgent:
         self.target_model.set_weights(self.model.get_weights())
 
         # An array with last n steps for training
-        self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
+        self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)  # defined at line 18
 
         # Custom tensorboard object
-        self.tensorboard = ModifiedTensorBoard(log_dir="logs/{}-{}".format(MODEL_NAME, int(time.time())))
+        self.tensorboard = ModifiedTensorBoard(log_dir="logs/{}-{}".format(MODEL_NAME, int(time.time())))  # @line 22
 
         # Used to count when to update target network with main network's weights
         self.target_update_counter = 0
@@ -294,8 +308,8 @@ class DQNAgent:
         new_current_states = np.array([transition[3] for transition in minibatch])/255
         future_qs_list = self.target_model.predict(new_current_states)
 
-        X = []
-        y = []
+        X = []  # features
+        y = []  # labels/ target values
 
         # Now we need to enumerate our batches
         for index, (current_state, action, reward, new_current_state, done) in enumerate(minibatch):
@@ -333,6 +347,7 @@ class DQNAgent:
         return self.model.predict(np.array(state).reshape(-1, *state.shape)/255)[0]
 
 
+# create an agent object
 agent = DQNAgent()
 
 # Iterate over episodes

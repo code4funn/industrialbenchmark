@@ -22,15 +22,15 @@ MIN_REPLAY_MEMORY_SIZE = 1_00  # Minimum number of steps in a memory to start tr
 MINIBATCH_SIZE = 64  # How many steps (samples) to use for training
 UPDATE_TARGET_EVERY = 5  # Terminal states (end of episodes)
 MODEL_NAME = 'IB_disc'
-MIN_REWARD = -2000  # For model save
+MIN_REWARD = -5000  # For model save
 MEMORY_FRACTION = 0.20
 
 # Environment settings
-EPISODES = 2_000
+EPISODES = 2_00
 
 # Exploration settings
 epsilon = 1  # not a constant, going to be decayed
-EPSILON_DECAY = 0.99975
+EPSILON_DECAY = 0.9
 MIN_EPSILON = 0.001
 
 #  Stats settings
@@ -139,21 +139,7 @@ class DQNAgent:
         model.add(Dense(nb_actions))
         model.add(Activation('linear'))
 
-        # model.add(Conv2D(256, (3, 3), input_shape=env.OBSERVATION_SPACE_VALUES))  # OBSERVATION_SPACE_VALUES = (10, 10, 3) a 10x10 RGB image.
-        # model.add(Activation('relu'))
-        # model.add(MaxPooling2D(pool_size=(2, 2)))
-        # model.add(Dropout(0.2))
-        #
-        # model.add(Conv2D(256, (3, 3)))
-        # model.add(Activation('relu'))
-        # model.add(MaxPooling2D(pool_size=(2, 2)))
-        # model.add(Dropout(0.2))
-        #
-        # model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        # model.add(Dense(64))
-
-        # model.add(Dense(env.ACTION_SPACE_SIZE, activation='linear'))  # ACTION_SPACE_SIZE = how many choices (9)
-        model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['mae'])
+        model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['accuracy'])
         return model
 
     # Adds step's data to a memory replay array
@@ -163,9 +149,6 @@ class DQNAgent:
     #                                                                                   5.66814018, 173.58538553,
     #                                                                                   190.58980608]), False)
     def update_replay_memory(self, transition):
-        # print('TRANSITION')
-        # print(transition)
-        # print()
         self.replay_memory.append(transition)
 
     # Trains main network every step during episode

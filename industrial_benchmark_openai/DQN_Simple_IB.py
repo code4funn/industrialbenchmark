@@ -1,3 +1,10 @@
+"""
+DQN_Simple_IB.py
+by Anurag Kumar
+https://github.com/code4funn/industrialbenchmark
+You may use, but please credit the source.
+"""
+
 import numpy as np
 import keras.backend.tensorflow_backend as backend
 from keras.models import Sequential

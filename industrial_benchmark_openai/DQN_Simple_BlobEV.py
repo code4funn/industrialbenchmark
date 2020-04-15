@@ -1,3 +1,10 @@
+"""
+DQN_Simple_BlobEV.py
+by Sentdex
+https://pythonprogramming.net/training-deep-q-learning-dqn-reinforcement-learning-python-tutorial/
+You may use, but please credit the source.
+"""
+
 import numpy as np
 import keras.backend.tensorflow_backend as backend
 from keras.models import Sequential

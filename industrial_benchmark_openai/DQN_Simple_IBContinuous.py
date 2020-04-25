@@ -1,5 +1,5 @@
 """
-DQN_Simple_IB.py
+DQN_Simple_IBCountinuous.py
 by Anurag Kumar
 https://github.com/code4funn/industrialbenchmark
 You may use, but please credit the source.
@@ -23,21 +23,21 @@ import cv2
 # import the openAI IB wrapper
 from OpenAI_IB import OpenAI_IB
 
-DISCOUNT = 0.9
-REPLAY_MEMORY_SIZE = 5_000  # How many last steps to keep for model training
-MIN_REPLAY_MEMORY_SIZE = 1_00  # Minimum number of steps in a memory to start training
+DISCOUNT = 0.99
+REPLAY_MEMORY_SIZE = 50_000  # How many last steps to keep for model training
+MIN_REPLAY_MEMORY_SIZE = 1_000  # Minimum number of steps in a memory to start training
 MINIBATCH_SIZE = 64  # How many steps (samples) to use for training
 UPDATE_TARGET_EVERY = 5  # Terminal states (end of episodes)
-MODEL_NAME = 'IB_disc'
-MIN_REWARD = -5000  # For model save
+MODEL_NAME = 'IB_cont'
+MIN_REWARD = -10_000  # For model save
 MEMORY_FRACTION = 0.20
 
 # Environment settings
-EPISODES = 2_00
+EPISODES = 2_000
 
 # Exploration settings
 epsilon = 1  # not a constant, going to be decayed
-EPSILON_DECAY = 0.9
+EPSILON_DECAY = 0.9975
 MIN_EPSILON = 0.001
 
 #  Stats settings
@@ -48,12 +48,12 @@ SHOW_PREVIEW = False
 
 
 # create an environment object
-env = OpenAI_IB(setpoint=50, reward_type='classic', action_type='discrete')
-nb_actions = env.action_space.n
+env = OpenAI_IB(setpoint=50, reward_type='classic', action_type='continuous')
+nb_actions = env.action_space.shape[0]
 env.seed(123)
 
 # # For stats
-ep_rewards = [-200]
+ep_rewards = []
 
 # For more repetitive results
 random.seed(123)
@@ -146,7 +146,7 @@ class DQNAgent:
         model.add(Dense(nb_actions))
         model.add(Activation('linear'))
 
-        model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['accuracy'])
+        model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['mae'])
         return model
 
     # Adds step's data to a memory replay array
@@ -170,12 +170,9 @@ class DQNAgent:
 
         # Get current states from minibatch, then query NN model for Q values
         current_states = np.array([transition[0] for transition in minibatch])
-        # print('CURRENT STATES')
-        # # print(current_states)
-        # print(current_states.shape)
-        # print(type(current_states[0]))
-        # print()
         current_qs_list = self.model.predict(current_states.reshape(-1, 1, 7))
+        # print('CS ', current_states[0])
+        # print(current_qs_list)
 
         # Get future states from minibatch, then query NN model for Q values
         # When using target network, query it, otherwise main network should be queried
@@ -192,27 +189,20 @@ class DQNAgent:
             # almost like with Q Learning, but we use just part of equation here
             if not done:
                 max_future_q = np.max(future_qs_list[index])
+                print(index, future_qs_list[index])
+                print(np.max(future_qs_list[index]))
                 new_q = reward + DISCOUNT * max_future_q
             else:
                 new_q = reward
 
             # Update Q value for given state
-            # print(f'index : {index}')
-            # print(current_qs_list[0].shape)
             current_qs = current_qs_list[index]
-            # print(current_qs)
-            # print(action)
-            # print(new_q)
             current_qs[action] = new_q
 
             # And append to our training data
             X.append(current_state)
             y.append(current_qs)
-        # print(len(X))
-        # print()
-        # print(len(y))
 
-        # print(np.array(X))
         # Fit on all samples as one batch, log only on terminal state
         self.model.fit(np.array(X).reshape(MINIBATCH_SIZE,1,7), np.array(y), batch_size=MINIBATCH_SIZE, verbose=0,
                        shuffle=False,
@@ -250,7 +240,7 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
     current_state = env.reset()
 
     # initialize action
-    # action = np.array([0., 0., 0.])
+    action = np.array([0., 0., 0.])
 
     # Reset flag and start iterating until episode ends
     done = False
@@ -262,9 +252,9 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
             action = np.argmax(agent.get_qs(current_state))
         else:
             # Get random action
-            action = np.random.randint(0, nb_actions)
-            # action += 0.1 * (2 * np.random.rand(3) - 1)
-            # action = np.clip(action, -1, 1)
+            # action = np.random.randint(0, nb_actions)
+            action += 0.1 * (2 * np.random.rand(3) - 1)
+            action = np.clip(action, -1, 1)
 
         new_state, reward, done, _ = env.step(action) # returns new_state, reward, done, info
 

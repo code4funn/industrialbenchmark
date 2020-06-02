@@ -35,11 +35,11 @@ from collections import OrderedDict
 
 class OpenAI_IB(gym.Env):
 
-        def __init__(self, setpoint, reward_type, action_type):
+        def __init__(self, setpoint, reward_type, action_type, stationary_p=True):
 
                 # Setting up the IB environment
                 self.setpoint = setpoint
-                self.IB = IDS(setpoint)
+                self.IB = IDS(setpoint, stationary_p=stationary_p)
                 # Used to determine whether to return the absolute value or the relative change in the cost function
                 self.reward_function = reward_type
                 # Used to set an arbitrary limit of how many time steps the environment can take before resetting

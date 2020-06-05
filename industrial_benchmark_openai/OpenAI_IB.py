@@ -35,7 +35,7 @@ from collections import OrderedDict
 
 class OpenAI_IB(gym.Env):
 
-        def __init__(self, setpoint, reward_type, action_type, stationary_p=True):
+        def __init__(self, setpoint, reward_type, action_type, reset_after_timestep=1000, stationary_p=True):
 
                 # Setting up the IB environment
                 self.setpoint = setpoint
@@ -44,7 +44,7 @@ class OpenAI_IB(gym.Env):
                 self.reward_function = reward_type
                 # Used to set an arbitrary limit of how many time steps the environment can take before resetting
                 # Could potentially be unlimited
-                self.reset_after_timesteps = 1000
+                self.reset_after_timesteps = reset_after_timestep  # 1000
                 self.action_type = action_type
 
                 # Action space and the observation space
